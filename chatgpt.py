@@ -25,7 +25,7 @@ if not st.session_state.autenticado:
 
 # --- CONFIGURACIÓN DEL CHATBOT ---
 st.title("🤖 ChatBot Inteligente Kikin")
-st.image("/workspaces/kikin/Cecytobb1.jpg", width=550)
+st.image("Cecytobb1.jpg", width=550)
 
 # SEGURIDAD: Intentamos leer la API Key desde los Secrets de Streamlit
 # Si no existe, usamos un valor vacío para que no truene el código
