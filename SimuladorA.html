@@ -1,0 +1,911 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulador HTML5 - Aleatorio con Contador</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Urbanist:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --text-color: #f8fafc;
+            --text-muted: #94a3b8;
+            --accent: #38bdf8;
+            --accent-hover: #0ea5e9;
+            --success: #22c55e;
+            --error: #ef4444;
+            --border: #334155;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: 'Urbanist', sans-serif;
+            padding: 40px 20px;
+            line-height: 1.6;
+        }
+
+        .container { max-width: 900px; margin: 0 auto; }
+
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+            border-bottom: 2px solid var(--border);
+            padding-bottom: 20px;
+        }
+
+        header h1 { font-size: 2.5rem; margin-bottom: 10px; }
+        header h1 span { color: var(--accent); }
+        header p { color: var(--text-muted); font-size: 1.1rem; }
+
+        .quiz-form { display: flex; flex-direction: column; gap: 30px; }
+
+        .question-card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 25px;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .question-number {
+            font-size: 0.9rem;
+            color: var(--accent);
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .question-text { font-size: 1.2rem; font-weight: 600; margin-bottom: 15px; }
+
+        .code-block {
+            background-color: #0b0f19;
+            border-left: 4px solid var(--accent);
+            font-family: 'JetBrains Mono', monospace;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            font-size: 0.95rem;
+            overflow-x: auto;
+            color: #e2e8f0;
+            white-space: pre-wrap;
+        }
+
+        .options-list { list-style: none; display: flex; flex-direction: column; gap: 12px; }
+
+        .option-item {
+            display: flex;
+            align-items: center;
+            background-color: #151f32;
+            border: 1px solid var(--border);
+            padding: 14px 18px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.2s, border-color 0.2s;
+        }
+
+        .option-item:hover { background-color: #1e2e4a; border-color: var(--accent); }
+
+        .option-item input {
+            margin-right: 15px;
+            width: 18px;
+            height: 18px;
+            accent-color: var(--accent);
+            cursor: pointer;
+        }
+
+        .option-text { font-size: 1.05rem; }
+
+        .question-card.correct { border-color: var(--success); box-shadow: 0 0 15px rgba(34, 197, 94, 0.15); }
+        .question-card.incorrect { border-color: var(--error); box-shadow: 0 0 15px rgba(239, 68, 68, 0.15); }
+
+        .option-item.is-correct { background-color: rgba(34, 197, 94, 0.2) !important; border-color: var(--success) !important; }
+        .option-item.is-wrong { background-color: rgba(239, 68, 68, 0.2) !important; border-color: var(--error) !important; }
+
+        .feedback-box {
+            margin-top: 15px;
+            padding: 12px 15px;
+            border-radius: 6px;
+            font-size: 0.95rem;
+            display: none;
+            font-weight: 500;
+        }
+
+        .question-card.correct .feedback-box { display: block; background-color: rgba(34, 197, 94, 0.1); color: #4ade80; border: 1px solid rgba(34, 197, 94, 0.2); }
+        .question-card.incorrect .feedback-box { display: block; background-color: rgba(239, 68, 68, 0.1); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.2); }
+
+        .submit-btn {
+            background-color: var(--accent);
+            color: #0f172a;
+            font-family: 'Urbanist', sans-serif;
+            font-size: 1.2rem;
+            font-weight: 700;
+            padding: 16px 32px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            align-self: center;
+            margin-top: 20px;
+            transition: background-color 0.2s, transform 0.1s;
+        }
+        .submit-btn:hover { background-color: var(--accent-hover); }
+
+        #result-dashboard {
+            background-color: var(--card-bg);
+            border: 2px solid var(--accent);
+            border-radius: 12px;
+            padding: 30px;
+            text-align: center;
+            margin-bottom: 40px;
+            display: none;
+        }
+
+        #result-dashboard h2 { font-size: 2rem; margin-bottom: 15px; }
+        .score-text { font-size: 3rem; font-weight: 700; color: var(--accent); margin-bottom: 10px; }
+        .badge { display: inline-block; padding: 6px 16px; border-radius: 50px; font-weight: 600; font-size: 1rem; margin-top: 10px; }
+        .badge.pass { background-color: var(--success); color: #fff; }
+        .badge.fail { background-color: var(--error); color: #fff; }
+
+        .attempt-counter {
+            margin-top: 15px;
+            font-size: 1rem;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+        .attempt-counter span {
+            color: var(--accent);
+            font-weight: 700;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>Simulador Autocalificable <span>HTML5</span></h1>
+        <p>Examen de Certificación IT Specialist — 39 Reactivos Aleatorios</p>
+    </header>
+
+    <div id="result-dashboard">
+        <h2>Resultado del Examen</h2>
+        <div class="score-text" id="score-display">0 / 0</div>
+        <p id="percentage-display">0% de respuestas correctas</p>
+        <div id="badge-display" class="badge">Aprobado</div>
+        <div class="attempt-counter">Has realizado esta prueba: <span id="attempt-display">0</span> veces</div>
+    </div>
+
+    <form class="quiz-form" id="quizForm" onsubmit="evaluateQuiz(event)">
+        <div id="dynamic-questions-container"></div>
+        <button type="submit" class="submit-btn">Calificar Examen</button>
+    </form>
+</div>
+
+<script>
+    const questionsData = [
+        {
+            id: "q1",
+            text: "¿Qué elemento o etiqueta SVG debe usar si desea aplicar una transformación de rotación o escalado directamente a un elemento gráfico animado?",
+            code: null,
+            type: "radio",
+            options: [
+                { key: "A", text: "A) <circle>" },
+                { key: "B", text: "B) <animateMotion>" },
+                { key: "C", text: "C) <path>" },
+                { key: "D", text: "D) <animateTransform>" }
+            ],
+            correct: "D",
+            feedback: "Respuesta correcta: D. <animateTransform> se utiliza para animar atributos de transformación como rotación, escalado o traslación en SVG."
+        },
+        {
+            id: "q2",
+            text: "La variable ctx representa el contexto 2D de un elemento canvas. ¿Qué figura geométrica dibuja la siguiente línea de código?",
+            code: "ctx.arc(x, y, r, 0, Math.PI, true);",
+            type: "radio",
+            options: [
+                { key: "A", text: "A) Un cuadrado centrado en el punto dado" },
+                { key: "B", text: "B) Un semicírculo (arco de 180 grados)" },
+                { key: "C", text: "C) Una línea recta diagonal" },
+                { key: "D", text: "D) Un círculo completo de 360 grados" }
+            ],
+            correct: "B",
+            feedback: "Respuesta correcta: B. Al ir desde 0 radianes hasta Math.PI (180 grados), se genera un arco o semicírculo."
+        },
+        {
+            id: "q3",
+            text: "¿Qué eventos son nativos y totalmente admitidos por los dispositivos con pantalla táctil? (Elija dos opciones)",
+            code: null,
+            type: "checkbox",
+            options: [
+                { key: "A", text: "A) drag" },
+                { key: "B", text: "B) click" },
+                { key: "C", text: "C) selection" },
+                { key: "D", text: "D) touchstart" }
+            ],
+            correct: ["B", "D"],
+            feedback: "Respuesta correcta: B y D. Los dispositivos táctiles admiten 'touchstart' de la API de Touch y también emulan los eventos tradicionales de 'click'."
+        },
+        {
+            id: "q4",
+            text: "¿Qué atributo HTML5 permite validar una entrada de datos utilizando una expresión regular (Regex)?",
+            code: null,
+            type: "radio",
+            options: [
+                { key: "A", text: "A) required" },
+                { key: "B", text: "B) placeholder" },
+                { key: "C", text: "C) pattern" },
+                { key: "D", text: "D) maxlength" }
+            ],
+            correct: "C",
+            feedback: "Respuesta correcta: C. El atributo 'pattern' toma una expresión regular contra la cual se valida el valor del input."
+        },
+        {
+            id: "q5",
+            text: "Se requiere configurar un campo obligatorio que acepte un formato de código postal compuesto por exactamente 5 números. Elija los atributos correspondientes:",
+            code: '<input type="text" id="post_code" _______="[0-9]{5}" _______>',
+            type: "radio",
+            options: [
+                { key: "A", text: "A) pattern / required" },
+                { key: "B", text: "B) minlength / value" },
+                { key: "C", text: "C) name / size" },
+                { key: "D", text: "D) placeholder / disabled" }
+            ],
+            correct: "A",
+            feedback: 'Respuesta correcta: A. pattern="[0-9]{5}" valida los 5 números y el atributo booleano required lo vuelve obligatorio.'
+        },
+        {
+            id: "q6",
+            text: "¿Qué etiqueta HTML5 se debe usar junto con un input para proporcionar una lista desplegable con opciones sugeridas predefinidas?",
+            code: '<input list="food-choice">\n<________ id="food-choice">\n  <option value="Vegetarian">\n</________>',
+            type: "radio",
+            options: [
+                { key: "A", text: "A) <select>" },
+                { key: "B", text: "B) <datalist>" },
+                { key: "C", text: "C) <optgroup>" },
+                { key: "D", text: "D) <menu>" }
+            ],
+            correct: "B",
+            feedback: "Respuesta correcta: B. <datalist> define las opciones sugeridas vinculadas mediante el atributo 'list' del input."
+        },
+        {
+            id: "q7",
+            text: "¿Cuál de los siguientes fragmentos declara de forma válida un método o función dentro de un objeto o clase en JavaScript?",
+            code: null,
+            type: "radio",
+            options: [
+                { key: "A", text: "A) var a = new Score();" },
+                { key: "B", text: "B) this.Score = function() { ... };" },
+                { key: "C", text: "C) function == Score()" },
+                { key: "D", text: "D) math.Score() => method" }
+            ],
+            correct: "B",
+            feedback: "Respuesta correcta: B. Asignar una función anónima a una propiedad ligada al contexto 'this' es la manera clásica de declarar métodos."
+        },
+        {
+            id: "q8",
+            text: "En el modelo de Caja Flexible (Flexbox) de CSS, ¿qué propiedad define la dirección del eje principal o la orientación en la que se colocan los elementos hijos?",
+            code: null,
+            type: "radio",
+            options: [
+                { key: "A", text: "A) justify-content" },
+                { key: "B", text: "B) align-items" },
+                { key: "C", text: "C) flex-direction" },
+                { key: "D", text: "D) flex-wrap" }
+            ],
+            correct: "C",
+            feedback: "Respuesta correcta: C. flex-direction (con valores como row, column) determina la orientación del eje principal."
+        },
+        {
+            id: "q9",
+            text: "¿Qué propiedad de CSS se utiliza para limpiar o cancelar el efecto de elementos flotantes anteriores, impidiendo que se coloquen a sus lados?",
+            code: null,
+            type: "radio",
+            options: [
+                { key: "A", text: "A) float" },
+                { key: "B", text: "B) clear" },
+                { key: "C", text: "C) position" },
+                { key: "D", text: "D) overflow" }
+            ],
+            correct: "B",
+            feedback: "Respuesta correcta: B. La propiedad 'clear' indica si un elemento debe estar debajo de los elementos flotantes anteriores."
+        },
+        {
+            id: "q10",
+            text: "¿Qué dos funciones CSS3 son válidas y admitidas para realizar transformaciones bidimensionales (2D)? (Elija dos opciones)",
+            code: null,
+            type: "checkbox",
+            options: [
+                { key: "A", text: "A) matrix()" },
+                { key: "B", text: "B) skew()" },
+                { key: "C", text: "C) zoom()" },
+                { key: "D", text: "D) scroll()" }
+            ],
+            correct: ["A", "B"],
+            feedback: "Respuesta correcta: A y B. Las transformaciones 2D incluyen funciones como matrix(), translate(), scale(), rotate(), y skew()."
+        },
+        {
+            id: "q11",
+            text: "Para evitar que un formulario web se envíe al servidor cuando se detectan errores de validación mediante JavaScript, ¿qué método del objeto Event debe invocar?",
+            code: null,
+            type: "radio",
+            options: [
+                { key: "A", text: "A) event.stopPropagation()" },
+                { key: "B", text: "B) event.preventDefault()" },
+                { key: "C", text: "C) event.abort()" },
+                { key: "D", text: "D) event.cancelable()" }
+            ],
+            correct: "B",
+            feedback: "Respuesta correcta: B. preventDefault() cancela el comportamiento por defecto de un evento, como el envío de formularios."
+        },
+        {
+            id: "q12",
+            text: "¿Qué atributo HTML5 especifica una breve pista o sugerencia que describe el valor esperado en un campo de entrada, mostrándose antes de que el usuario escriba algo?",
+            code: null,
+            type: "radio",
+            options: [
+                { key: "A", text: "A) value" },
+                { key: "B", text: "B) pattern" },
+                { key: "C", text: "C) placeholder" },
+                { key: "D", text: "D) maxlength" }
+            ],
+            correct: "C",
+            feedback: "Respuesta correcta: C. El atributo 'placeholder' muestra un texto de guía tenue dentro del input."
+        },
+        {
+            id: "q13",
+            text: "¿Qué etiqueta semántica de HTML5 está diseñada específicamente para inyectar o representar los resultados de un cálculo matemático o script?",
+            code: null,
+            type: "radio",
+            options: [
+                { key: "A", text: "A) <summary>" },
+                { key: "B", text: "B) <output>" },
+                { key: "C", text: "C) <progress>" },
+                { key: "D", text: "D) <meter>" }
+            ],
+            correct: "B",
+            feedback: "Respuesta correcta: B. El elemento <output> representa explícitamente el resultado de un cálculo o de una acción del usuario."
+        },
+        {
+            id: "q14",
+            text: "¿Cuáles son eventos estándar válidos que se pueden registrar e interactuar directamente sobre un elemento <canvas>? (Elija tres opciones)",
+            code: null,
+            type: "checkbox",
+            options: [
+                { key: "A", text: "A) mouseup" },
+                { key: "B", text: "B) mousedown" },
+                { key: "C", text: "C) mousemove" },
+                { key: "D", text: "D) datareceived" },
+                { key: "E", text: "E) blur" }
+            ],
+            correct: ["A", "B", "C"],
+            feedback: "Respuesta correcta: A, B y C. Al ser un elemento de la interfaz de usuario, responde a los eventos estándar del mouse."
+        },
+        {
+            id: "q15",
+            text: "Al usar Media Queries en CSS, ¿cuál es la sintaxis correcta para aplicar estilos exclusivos a pantallas cuyo ancho sea menor o igual a 480px?",
+            code: null,
+            type: "radio",
+            options: [
+                { key: "A", text: "A) @media screen and (min-width: 480px)" },
+                { key: "B", text: "B) @media screen and (max-width: 480px)" },
+                { key: "C", text: "C) @media mobile (width: 480px)" },
+                { key: "D", text: "D) @media device-width <= 480px" }
+            ],
+            correct: "B",
+            feedback: "Respuesta correcta: B. max-width determina el límite superior inclusivo del tamaño de pantalla."
+        },
+        {
+            id: "q16",
+            text: "¿Qué propiedad CSS3 permite aplicar efectos visuales como desenfoque, escala de grises o tono sepia directamente a un elemento gráfico o imagen?",
+            code: null,
+            type: "radio",
+            options: [
+                { key: "A", text: "A) backdrop-shadow" },
+                { key: "B", text: "B) filter" },
+                { key: "C", text: "C) image-effect" },
+                { key: "D", text: "D) blend-mode" }
+            ],
+            correct: "B",
+            feedback: "Respuesta correcta: B. La propiedad 'filter' aplica cambios visuales (como grayscale, sepia o blur) antes de renderizar."
+        },
+        {
+            id: "q17",
+            text: "Se ejecuta el siguiente código JavaScript para combinar colecciones: ¿qué método de los arreglos se utiliza para unirlos sin alterar los arreglos iniciales?",
+            code: "var groceries = [];\nfunction addVegetables() {\n  groceries = groceries.concat(vegetables);\n}",
+            type: "radio",
+            options: [
+                { key: "A", text: "A) push()" },
+                { key: "B", text: "B) join()" },
+                { key: "C", text: "C) concat()" },
+                { key: "D", text: "D) merge()" }
+            ],
+            correct: "C",
+            feedback: "Respuesta correcta: C. El método concat() devuelve una nueva matriz unificada sin modificar las matrices existentes."
+        },
+        {
+            id: "q18",
+            text: "¿Cuál de las siguientes declaraciones representa un valor y uso sintáctico válido del filtro de desenfoque en CSS3?",
+            code: null,
+            type: "radio",
+            options: [
+                { key: "A", text: "A) filter: blur(5px);" },
+                { key: "B", text: "B) filter: blur(50%);" },
+                { key: "C", text: "C) filter: clear-blur(10);" },
+                { key: "D", text: "D) filter: opaque-blur(5px);" }
+            ],
+            correct: "A",
+            feedback: "Respuesta correcta: A. El filtro 'blur()' requiere unidades de longitud claras (como pixeles o em), no valores en porcentaje."
+        },
+        {
+            id: "q19",
+            text: "En un formulario HTML5, ¿qué elemento sirve para agrupar temáticamente varios controles o campos relacionados dentro de una caja visual o contenedor común?",
+            code: null,
+            type: "radio",
+            options: [
+                { key: "A", text: "A) <legend>" },
+                { key: "B", text: "B) <fieldset>" },
+                { key: "C", text: "C) <group>" },
+                { key: "D", text: "D) <optgroup>" }
+            ],
+            correct: "B",
+            feedback: "Respuesta correcta: B. <fieldset> se utiliza para agrupar campos web emparentados y opcionalmente rotularlos con <legend>."
+        },
+        {
+            id: "q20",
+            text: "La etiqueta nativa de SVG debe usarse si se requiere modelar u obtener un óvalo o elipse perfecta en lugar de un círculo estándar. ¿Cuál es?",
+            code: '<________ cx="200" cy="100" rx="20" ry="10" />',
+            type: "radio",
+            options: [
+                { key: "A", text: "A) <circle>" },
+                { key: "B", text: "B) <ellipse>" },
+                { key: "C", text: "C) <oval>" },
+                { key: "D", text: "D) <rect>" }
+            ],
+            correct: "B",
+            feedback: "Respuesta correcta: B. La etiqueta <ellipse> utiliza rx y ry para definir los radios horizontal y vertical respectivamente."
+        },
+        {
+            id: "q21",
+            text: "En la sintaxis de clases moderna en JavaScript (ES6), ¿qué palabra clave implementa formalmente el mecanismo de herencia clásica?",
+            code: "class Dog ________ Pet { ... }",
+            type: "radio",
+            options: [
+                { key: "A", text: "A) implements" },
+                { key: "B", text: "B) prototype" },
+                { key: "C", text: "C) extends" },
+                { key: "D", text: "D) inherits" }
+            ],
+            correct: "C",
+            feedback: "Respuesta correcta: C. Se utiliza la palabra clave 'extends' para crear una subclase que hereda de una superclase."
+        },
+        {
+            id: "q22",
+            text: "Dentro de la API de Geolocalización de HTML5, ¿qué método específico permite escuchar y rastrear de forma continua los cambios de ubicación del dispositivo?",
+            code: null,
+            type: "radio",
+            options: [
+                { key: "A", text: "A) getCurrentPosition()" },
+                { key: "B", text: "B) watchPosition()" },
+                { key: "C", text: "C) trackPosition()" },
+                { key: "D", text: "D) clearWatch()" }
+            ],
+            correct: "B",
+            feedback: "Respuesta correcta: B. watchPosition() devuelve un ID de rastreo continuo cada vez que cambia la posición geográfica del terminal."
+        },
+        {
+            id: "q23",
+            text: "¿Cuál es el propósito primordial y el beneficio de implementar Media Queries en un sitio web contemporáneo?",
+            code: null,
+            type: "radio",
+            options: [
+                { key: "A", text: "A) Aumentar la velocidad de carga comprimiendo imágenes automáticamente." },
+                { key: "B", text: "B) Permitir el diseño web responsivo adaptando estilos a las dimensiones del dispositivo." },
+                { key: "C", text: "C) Encriptar el código fuente frente a inspecciones del navegador." },
+                { key: "D", text: "D) Guardar contraseñas de manera local y segura." }
+            ],
+            correct: "B",
+            feedback: "Respuesta correcta: B. Las Media Queries permiten que el renderizado de la página se adapte dinámicamente a factores como el ancho de pantalla."
+        },
+        {
+            id: "q24",
+            text: "En el Ciclo de Vida de las Aplicaciones (ALM), ¿cuál es la etapa enfocada en descubrir y solucionar fallos lógicos antes del lanzamiento de producción?",
+            code: null,
+            type: "radio",
+            options: [
+                { key: "A", text: "A) Planificación" },
+                { key: "B", text: "B) Diseño" },
+                { key: "C", text: "C) Pruebas (Testing)" },
+                { key: "D", text: "D) Despliegue" }
+            ],
+            correct: "C",
+            feedback: "Respuesta correcta: C. La fase de pruebas o control de calidad se encarga de mitigar errores y validar la funcionalidad técnica."
+        },
+        {
+            id: "q25",
+            text: "Para construir una Grid CSS con 4 columnas idénticas y fluidas utilizando CSS Grid Layout, ¿cuál es el valor correcto de la propiedad grid-template-columns?",
+            code: null,
+            type: "radio",
+            options: [
+                { key: "A", text: "A) 25% 25% 25% 25%" },
+                { key: "B", text: "B) 1fr 1fr 1fr 1fr" },
+                { key: "C", text: "C) auto-4-columns" },
+                { key: "D", text: "D) repeat(4, 25px)" }
+            ],
+            correct: "B",
+            feedback: "Respuesta correcta: B. La unidad de fracción flexible 'fr' calcula perfectamente el espacio disponible reduciendo problemas de desbordamiento."
+        },
+        {
+            id: "q26",
+            text: "¿Qué método nativo de JavaScript analiza e interpreta un bloque de datos de tipo cadena de texto con formato JSON para convertirlo en un objeto operable?",
+            code: "var currentdata = JSON.________(studentString);",
+            type: "radio",
+            options: [
+                { key: "A", text: "A) stringify" },
+                { key: "B", text: "B) parse" },
+                { key: "C", text: "C) toObject" },
+                { key: "D", text: "D) convert" }
+            ],
+            correct: "B",
+            feedback: "Respuesta correcta: B. JSON.parse() toma una estructura JSON en formato de texto y genera el objeto JavaScript respectivo."
+        },
+        {
+            id: "q27",
+            text: "¿Qué propiedad de CSS Grid se utiliza para asignar nombres y crear una plantilla visual estructurada de celdas dentro del elemento contenedor?",
+            code: null,
+            type: "radio",
+            options: [
+                { key: "A", text: "A) grid-template-areas" },
+                { key: "B", text: "B) grid-column-gap" },
+                { key: "C", text: "C) display: grid-cells" },
+                { key: "D", text: "D) grid-row-start" }
+            ],
+            correct: "A",
+            feedback: "Respuesta correcta: A. grid-template-areas permite definir cadenas que nombran las áreas de diseño modular."
+        },
+        {
+            id: "q28",
+            text: "Dado un patrón de validación en una expresión regular, ¿cuál de las siguientes opciones de texto cumple y es válida?",
+            code: 'pattern="[a-zA-Z]{4}-[0-9]{2}-[0-9]{4}-[a-zA-Z]{4}"',
+            type: "radio",
+            options: [
+                { key: "A", text: "A) AGbe-23h-234-HBG6" },
+                { key: "B", text: "B) Kgyn-23-3978-Uhj6" },
+                { key: "C", text: "C) y7Ts-A3-4876-ASFr" },
+                { key: "D", text: "D) kukX-34-4938-WJDF" }
+            ],
+            correct: "D",
+            feedback: "Respuesta correcta: D. Cumple exactamente con la secuencia de letras y números requerida por cada cuantificador."
+        },
+        {
+            id: "q29",
+            text: "Para vincular un filtro de efectos avanzados de un elemento SVG al selector CSS de un texto, ¿qué función debe invocar?",
+            code: 'text { filter: ________("#f2"); }',
+            type: "radio",
+            options: [
+                { key: "A", text: "A) src" },
+                { key: "B", text: "B) href" },
+                { key: "C", text: "C) url" },
+                { key: "D", text: "D) link" }
+            ],
+            correct: "C",
+            feedback: "Respuesta correcta: C. url() se encarga de apuntar al ID del filtro interno del documento."
+        },
+        {
+            id: "q30",
+            text: "Desea ocultar por completo el desbordamiento de un texto largo que supera el ancho fijo de su contenedor sin generar barras de desplazamiento laterales. ¿Qué valor debe usar?",
+            code: null,
+            type: "radio",
+            options: [
+                { key: "A", text: "A) overflow: scroll" },
+                { key: "B", text: "B) overflow: hidden" },
+                { key: "C", text: "C) overflow: auto" },
+                { key: "D", text: "D) overflow: visible" }
+            ],
+            correct: "B",
+            feedback: "Respuesta correcta: B. 'hidden' recorta todo contenido sobrante evitando que afecte el renderizado externo."
+        },
+        {
+            id: "q31",
+            text: "¿Cuál de las siguientes acciones NO forma parte habitual de la fase de control de calidad o pruebas en ALM?",
+            code: null,
+            type: "radio",
+            options: [
+                { key: "A", text: "A) Redactar los primeros borradores de requerimientos y lógica comercial." },
+                { key: "B", text: "B) Comprobar la compatibilidad entre navegadores modernos." },
+                { key: "C", text: "C) Encontrar defectos ocultos de integración." },
+                { key: "D", text: "D) Verificar el cumplimiento exacto de especificaciones del cliente." }
+            ],
+            correct: "A",
+            feedback: "Respuesta correcta: A. La redacción de requerimientos ocurre inicialmente en la fase de Planeación, no en Pruebas."
+        },
+        {
+            id: "q32",
+            text: "Bajo las reglas de seguridad de la API del navegador Web Storage, ¿qué tres elementos componen la directiva de 'mismo origen'? (Elija tres opciones)",
+            code: null,
+            type: "checkbox",
+            options: [
+                { key: "A", text: "A) Esquema o Protocolo (http/https)" },
+                { key: "B", text: "B) Nombre de host o dominio" },
+                { key: "C", text: "C) Puerto (80, 443, etc.)" },
+                { key: "D", text: "D) Cadena de consulta (Query params)" }
+            ],
+            correct: ["A", "B", "C"],
+            feedback: "Respuesta correcta: A, B y C. La directiva Same-Origin Policy se define estrictamente por Protocolo, Dominio y Puerto."
+        },
+        {
+            id: "q33",
+            text: "Un usuario reporta que al intentar tocar un botón de una interfaz móvil, accidentalmente activa otros campos adyacentes de forma constante. ¿Cuál es el error de diseño común?",
+            code: null,
+            type: "radio",
+            options: [
+                { key: "A", text: "A) La pantalla está rota o mal calibrada por hardware." },
+                { key: "B", text: "B) Áreas interactivas táctiles demasiado pequeñas y agrupadas de manera muy estrecha." },
+                { key: "C", text: "C) El uso de fuentes tipográficas con serifas grandes." },
+                { key: "D", text: "D) Falta de colores contrastantes en el fondo de los botones." }
+            ],
+            correct: "B",
+            feedback: "Respuesta correcta: B. De acuerdo a las pautas de UX móvil, los elementos táctiles deben poseer un tamaño mínimo adecuado y separación para evitar pulsaciones erróneas."
+        },
+        {
+            id: "q34",
+            text: "¿Qué controlador de eventos de un objeto XMLHttpRequest se dispara inmediatamente cuando los datos asíncronos terminan de descargarse exitosamente de la red?",
+            code: "xhr.________ = function() { var data = ... };",
+            type: "radio",
+            options: [
+                { key: "A", text: "A) onerror" },
+                { key: "B", text: "B) onreadystatechange" },
+                { key: "C", text: "C) onload" },
+                { key: "D", text: "D) onprogress" }
+            ],
+            correct: "C",
+            feedback: "Respuesta correcta: C. 'onload' simplifica el manejo de peticiones asíncronas ya que se ejecuta solo cuando la transacción concluye con éxito."
+        },
+        {
+            id: "q35",
+            text: "¿Cuál es el nombre del atributo requerido dentro de un input de texto para conectarlo con un bloque <datalist> de sugerencias?",
+            code: null,
+            type: "radio",
+            options: [
+                { key: "A", text: "A) id" },
+                { key: "B", text: "B) data-source" },
+                { key: "C", text: "C) list" },
+                { key: "D", text: "D) type" }
+            ],
+            correct: "C",
+            feedback: "Respuesta correcta: C. El atributo 'list' del input de datos debe coincidir idénticamente con el atributo 'id' del elemento datalist."
+        },
+        {
+            id: "q36",
+            text: "En un contenedor de Caja Flexible (Flexbox), ¿qué efecto produce asignar a un párrafo la propiedad order: -1 en comparación con el resto de los hermanos con valor por defecto?",
+            code: null,
+            type: "radio",
+            options: [
+                { key: "A", text: "A) Oculta visualmente el elemento." },
+                { key: "B", text: "B) Lo desplaza al inicio o primer lugar de la línea visual del flujo flexible." },
+                { key: "C", text: "C) Lo renderiza en formato vertical." },
+                { key: "D", text: "D) Bloquea cualquier animación interna." }
+            ],
+            correct: "B",
+            feedback: "Respuesta correcta: B. El valor por defecto de 'order' es 0, un número menor (-1) posiciona el ítem antes de los demás visualmente."
+        },
+        {
+            id: "q37",
+            text: "¿Qué métodos nativos forman parte formal de la interfaz de programación y manipulación de localStorage y sessionStorage? (Elija tres opciones)",
+            code: null,
+            type: "checkbox",
+            options: [
+                { key: "A", text: "A) clear()" },
+                { key: "B", text: "B) setItem()" },
+                { key: "C", text: "C) removeItem()" },
+                { key: "D", text: "D) writeCookie()" }
+            ],
+            correct: ["A", "B", "C"],
+            feedback: "Respuesta correcta: A, B y C. La interfaz de Web Storage provee setItem(), getItem(), removeItem(), clear() y key()."
+        },
+        {
+            id: "q38",
+            text: "¿Cuál es el comportamiento visual de un elemento de imagen si se le aplica la regla CSS de flotación float: right dentro de una caja con texto fluido?",
+            code: null,
+            type: "radio",
+            options: [
+                { key: "A", text: "A) Se posiciona al centro superponiéndose sobre las palabras." },
+                { key: "B", text: "B) Empuja la imagen al extremo derecho, provocando que el texto fluya rodeándola a la izquierda." },
+                { key: "C", text: "C) Desaparece hasta que el usuario hace scroll sobre ella." },
+                { key: "D", text: "D) Cambia su tamaño un 50% de manera fija." }
+            ],
+            correct: "B",
+            feedback: "Respuesta correcta: B. float: right alinea un elemento al costado derecho y reorganiza el contenido en línea adyacente."
+        },
+        {
+            id: "q39",
+            text: "¿Qué palabra clave debe usarse en la directiva multimedia de CSS3 para indicar que los estilos declarados apuntan específicamente al renderizado en pantallas de dispositivos y monitores?",
+            code: '@media ________ (max-width: 480px) { ... }',
+            type: "radio",
+            options: [
+                { key: "A", text: "A) print" },
+                { key: "B", text: "B) speech" },
+                { key: "C", text: "C) screen" },
+                { key: "D", text: "D) all-devices" }
+            ],
+            correct: "C",
+            feedback: "Respuesta correcta: C. El tipo de medio 'screen' indica pantallas de computadoras, tabletas y smartphones."
+        }
+    ];
+
+    function shuffleArray(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+    }
+
+    function initQuiz() {
+        const container = document.getElementById('dynamic-questions-container');
+        container.innerHTML = ''; 
+
+        const currentAttempts = localStorage.getItem('html5_quiz_attempts') || 0;
+        document.getElementById('attempt-display').textContent = currentAttempts;
+
+        const shuffledQuestions = shuffleArray([...questionsData]);
+
+        shuffledQuestions.forEach((q, index) => {
+            const shuffledOptions = shuffleArray([...q.options]);
+
+            const card = document.createElement('div');
+            card.className = 'question-card';
+            card.id = `${q.id}-card`;
+            card.dataset.correct = JSON.stringify(q.correct); 
+            card.dataset.type = q.type;
+
+            const qNumber = document.createElement('div');
+            qNumber.className = 'question-number';
+            qNumber.textContent = `Pregunta ${index + 1} de ${shuffledQuestions.length}`;
+            card.appendChild(qNumber);
+
+            const qText = document.createElement('div');
+            qText.className = 'question-text';
+            qText.textContent = q.text;
+            card.appendChild(qText);
+
+            if (q.code) {
+                const codeBlock = document.createElement('div');
+                codeBlock.className = 'code-block';
+                codeBlock.textContent = q.code;
+                card.appendChild(codeBlock);
+            }
+
+            const optionsList = document.createElement('ul');
+            optionsList.className = 'options-list';
+
+            shuffledOptions.forEach(opt => {
+                const li = document.createElement('li');
+                li.className = 'option-item';
+
+                const label = document.createElement('label');
+                label.style.display = 'flex';
+                label.style.alignItems = 'center';
+                label.style.width = '100%';
+                label.style.cursor = 'pointer';
+
+                const input = document.createElement('input');
+                input.type = q.type;
+                input.name = q.id;
+                input.value = opt.key;
+
+                const span = document.createElement('span');
+                span.className = 'option-text';
+                span.textContent = opt.text;
+
+                label.appendChild(input);
+                label.appendChild(span);
+                li.appendChild(label);
+                optionsList.appendChild(li);
+            });
+
+            card.appendChild(optionsList);
+
+            const feedbackBox = document.createElement('div');
+            feedbackBox.className = 'feedback-box';
+            feedbackBox.textContent = q.feedback;
+            card.appendChild(feedbackBox);
+
+            container.appendChild(card);
+        });
+    }
+
+    function evaluateQuiz(event) {
+        event.preventDefault();
+        let score = 0;
+        const cards = document.querySelectorAll('.question-card');
+        const totalQuestions = cards.length;
+
+        cards.forEach(card => {
+            card.classList.remove('correct', 'incorrect');
+            const qId = card.id.replace('-card', '');
+            const expected = JSON.parse(card.dataset.correct);
+            const type = card.dataset.type;
+
+            const optionItems = card.querySelectorAll('.option-item');
+            optionItems.forEach(item => item.classList.remove('is-correct', 'is-wrong'));
+
+            if (type === 'checkbox') {
+                const checkedBoxes = card.querySelectorAll(`input[name="${qId}"]:checked`);
+                const userValues = Array.from(checkedBoxes).map(cb => cb.value);
+                const matchesAll = expected.every(val => userValues.includes(val)) && userValues.length === expected.length;
+
+                card.querySelectorAll(`input[name="${qId}"]`).forEach(input => {
+                    const listItem = input.closest('.option-item');
+                    if (expected.includes(input.value)) {
+                        listItem.classList.add('is-correct');
+                    } else if (input.checked && !expected.includes(input.value)) {
+                        listItem.classList.add('is-wrong');
+                    }
+                });
+
+                if (matchesAll) {
+                    score++;
+                    card.classList.add('correct');
+                } else {
+                    card.classList.add('incorrect');
+                }
+            } else {
+                const selected = card.querySelector(`input[name="${qId}"]:checked`);
+                const userValue = selected ? selected.value : null;
+
+                card.querySelectorAll(`input[name="${qId}"]`).forEach(input => {
+                    const listItem = input.closest('.option-item');
+                    if (input.value === expected) {
+                        listItem.classList.add('is-correct');
+                    } else if (input.checked && input.value !== expected) {
+                        listItem.classList.add('is-wrong');
+                    }
+                });
+
+                if (userValue === expected) {
+                    score++;
+                    card.classList.add('correct');
+                } else {
+                    card.classList.add('incorrect');
+                }
+            }
+        });
+
+        let attempts = parseInt(localStorage.getItem('html5_quiz_attempts')) || 0;
+        attempts++;
+        localStorage.setItem('html5_quiz_attempts', attempts);
+        document.getElementById('attempt-display').textContent = attempts;
+
+        const dashboard = document.getElementById('result-dashboard');
+        const scoreDisplay = document.getElementById('score-display');
+        const percentageDisplay = document.getElementById('percentage-display');
+        const badgeDisplay = document.getElementById('badge-display');
+
+        const percentage = Math.round((score / totalQuestions) * 100);
+        
+        scoreDisplay.textContent = `${score} / ${totalQuestions}`;
+        percentageDisplay.textContent = `${percentage}% de respuestas correctas`;
+        
+        if (percentage >= 70) {
+            badgeDisplay.textContent = "Aprobado";
+            badgeDisplay.className = "badge pass";
+        } else {
+            badgeDisplay.textContent = "No Aprobado";
+            badgeDisplay.className = "badge fail";
+        }
+
+        dashboard.style.display = 'block';
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    window.onload = initQuiz;
+</script>
+
+</body>
+</html>
